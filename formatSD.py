@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 '''
-   Simple build script that modifies the qt project file for the correct library path. 
-   Which will also rebuild the library code and the Qt application as well
+   Find SD card and try and format it using fdisk
+   
 '''
 
 import os
