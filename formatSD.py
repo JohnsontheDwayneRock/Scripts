@@ -6,6 +6,7 @@
 '''
 
 import os
+import subprocess
 
 def findSD():
 
@@ -17,8 +18,25 @@ def findSD():
       pass
 
    # Find ze SD card
-   os.system("dmesg | tail >> dmesgOutput")
+   #os.system("blkid" >> dmesgOutput")
+	
+   #using subprocess
+   dmesgOutput = subprocess.check_output("blkid")
+   print("Which device is your SD card? (careful)")
+   devs = dmesgOutput.split("\n")
+   length = len(devs)
+   i = 0
+   for dev in devs:
+      print (str(i+1) + " " + dev[0:8])
+      i+=1
 
+   num = raw_input()
+   if num.isdigit():
+      print(devs[int(num)-1])
+      device = devs[int(num)-1]
+   else:
+      return
+'''
    dmesgRead = open("dmesgOutput", "r")
 
    possibleSDName = ""
@@ -48,10 +66,12 @@ def findSD():
       return
 
    dmesgRead.close()
-
+'''
    #Get sd info so we can properly partition...
    #sdInfo = "echo p"
-   os.system(("echo p") + "| fdisk " + "/dev/" + possibleSDName + " >> sdINFO")
+   #os.system(("echo p") + "| fdisk " + "/dev/" + possibleSDName + " >> sdINFO")
+
+   os.system(("echo p") + "| fdisk " + device + " >> sdINFO")
 
    sdInfoRead = open("sdINFO", "r")
 
@@ -62,7 +82,7 @@ def findSD():
          #deviceLoc = lines.find(possibleSDName)
          #sizeInfo = lines[deviceLoc + 4:].split(',')
          sectorSize = lines.split()
-	 print(sectorSize);
+         print(sectorSize)
          createPartion(sectorSize[7], possibleSDName)
          break
 
@@ -88,5 +108,5 @@ def createPartion(size, deviceName):
    pass
 
 
-#findSD()
-createPartion(15523840,"sdb")
+findSD()
+#createPartion(15523840,"sdb")
