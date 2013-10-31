@@ -2,10 +2,13 @@
 
 '''
    Find SD card and try and format it using fdisk
-   
+   Usage:
+     1. Plug in SD card. 
+     2. Run: sudo python2 formatSD.py 
 '''
 
 import os
+import subprocess
 
 def findSD():
 
@@ -17,57 +20,35 @@ def findSD():
       pass
 
    # Find ze SD card
-   os.system("dmesg | tail >> dmesgOutput")
+   #os.system("blkid" >> dmesgOutput")
+	
+   #using subprocess
+   dmesgOutput = subprocess.check_output("blkid")
+   devs = dmesgOutput.split("\n")
+   del devs[-1]
+   i = 0
 
-   dmesgRead = open("dmesgOutput", "r")
+   print("Available Disks:")
+   while i < len(devs):
+      tmp = devs[i]
+      devs[i] = tmp[0:8]
+      i+=1
 
-   possibleSDName = ""
-
-   for lines in dmesgRead:
-      if lines.find("sd") > 0:
-         grabSD = lines.find("sd")
-         infoSD = lines[grabSD:]
-         grabLBraket = infoSD.find("[")
-         grabRBraket = infoSD.find("]")
-         possibleSDName = infoSD[grabLBraket + 1:grabRBraket]
-         #print(possibleSDName)
-         print ("Found an SD card!")
-         break
-
-   deviceName = "/dev/" + possibleSDName
-   print ( deviceName )
-
-
-   varIn = raw_input("Continue with formatting? (y/n): ")
-   if varIn.lower() == "y":
-      pass
-   elif varIn.lower() == "n":
-      return
+   devs = list(set(devs))
+   print("Which device is your SD card? (careful)")
+   for idx, dev in enumerate(devs):
+      print(str(idx+1) + ". " + dev)
+         
+   num = raw_input()
+   if num.isdigit():
+      device = devs[int(num)-1]
    else:
-      print("U BAD")
       return
 
-   dmesgRead.close()
-
-   #Get sd info so we can properly partition...
-   #sdInfo = "echo p"
-   os.system(("echo p") + "| fdisk " + "/dev/" + possibleSDName + " >> sdINFO")
-
-   sdInfoRead = open("sdINFO", "r")
-
-   for lines in sdInfoRead:
-      info = "total"
-      #print info
-      if lines.find(info) > 0:
-         #deviceLoc = lines.find(possibleSDName)
-         #sizeInfo = lines[deviceLoc + 4:].split(',')
-         sectorSize = lines.split()
-	 print(sectorSize);
-         createPartion(sectorSize[7], possibleSDName)
-         break
-
-
-   sdInfoRead.close()
+   device = device[0:8]
+   sectorSize = subprocess.check_output(["blockdev","--getsize",device]) 
+   print("device info read for device: "+device+".")
+   createPartion(int(sectorSize), device)
    pass
 
 def createPartion(size, deviceName):
@@ -78,15 +59,14 @@ def createPartion(size, deviceName):
    SECOND_PARTITION =   " echo n; echo p; echo 2;" + "echo " + str(fixed + 1) + ";" + "echo " + str(fixed * 2) + ";"
    THIRD_PARTITION =    " echo n; echo p; echo 3;" + "echo " + str(fixed * 2 + 1) + ";" + "echo " + str(fixed * 3) + ";"
    FOURTH_PARTITION =   " echo n; echo p;" + "echo " + str(fixed * 3 + 1) + ";" + "echo " + str(int(size) - 1) + ";" + "echo w;)"
-   os.system( ( FIRST_PARTITION + SECOND_PARTITION + THIRD_PARTITION + FOURTH_PARTITION) + " | fdisk " + "/dev/" + deviceName )
+   os.system( ( FIRST_PARTITION + SECOND_PARTITION + THIRD_PARTITION + FOURTH_PARTITION) + " | fdisk " + deviceName )
 
-   os.system( "mkfs.vfat /dev/" + deviceName + "1")
-   os.system( "mkfs.ext4 /dev/" + deviceName + "2")
-   os.system( "mkfs.ext4 /dev/" + deviceName + "3")
-   os.system( "mkfs.ext4 /dev/" + deviceName + "4")
+   os.system( "mkfs.vfat " + deviceName + "1")
+   os.system( "mkfs.ext4 " + deviceName + "2")
+   os.system( "mkfs.ext4 " + deviceName + "3")
+   os.system( "mkfs.ext4 " + deviceName + "4")
 
    pass
 
 
-#findSD()
-createPartion(15523840,"sdb")
+findSD()
